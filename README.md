@@ -1,5 +1,5 @@
 tile_tool
----------
+=========
 Generate an OBJ file for a provided texture atlas and tile map image.
 
 * The tool builds meshes to render 2D tile maps in Unity.

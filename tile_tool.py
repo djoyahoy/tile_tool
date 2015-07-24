@@ -65,10 +65,10 @@ def gen_mesh(path, tc):
         if is_empty_tile(t):
             continue
 
-        bl = (x - (img.width / 2.0), -(y + 16) + (img.height / 2.0), 0.0)
-        tl = (x - (img.width / 2.0), -y + (img.height / 2.0), 0.0)
-        tr = ((x + 16) - (img.width / 2.0), -y + (img.height / 2.0), 0.0)
-        br = ((x + 16) - (img.width / 2.0), -(y + 16) + (img.height / 2.0), 0.0)
+        bl = (-(x - (img.width / 2.0)), -(y + 16) + (img.height / 2.0), 0.0)
+        tl = (-(x - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
+        tr = (-((x + 16) - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
+        br = (-((x + 16) - (img.width / 2.0)), -(y + 16) + (img.height / 2.0), 0.0)
 
         cur_vert += 4
         verts.extend([bl, tl, tr, br])
