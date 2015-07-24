@@ -21,7 +21,7 @@ def is_empty_tile(tile):
 def tile_hash(tile):
     return hashlib.sha1(tile.tostring()).hexdigest()
 
-def gen_tex_coords(path):
+def gen_tex_coords(path, tile_size):
     """Generate a dictionary of texture coordinates.
 
     The dictionary key is a hash of the pixels.
@@ -33,7 +33,7 @@ def gen_tex_coords(path):
 
     i = 1
     tiles = {}
-    for t, x, y in next_tile(img, 16):
+    for t, x, y in next_tile(img, tile_size):
         if is_empty_tile(t):
             continue
 
@@ -42,17 +42,17 @@ def gen_tex_coords(path):
         oy = 1.0 - (y / img.height)
 
         #  generate texture coordinates
-        bl = (ox, oy - (16 / img.height))
+        bl = (ox, oy - (tile_size / img.height))
         tl = (ox, oy)
-        tr = (ox + (16 / img.width), oy)
-        br = (ox + (16 / img.width), oy - (16 / img.height))
+        tr = (ox + (tile_size / img.width), oy)
+        br = (ox + (tile_size / img.width), oy - (tile_size / img.height))
         
         tiles[tile_hash(t)] = (i, [bl, tl, tr, br])
         i += 4
 
     return tiles
 
-def gen_mesh(path, tc):
+def gen_mesh(path, tc, tile_size):
     """Return a list for verticies and faces respectivley.
 
     Triangles use clockwise winding.
@@ -61,14 +61,14 @@ def gen_mesh(path, tc):
 
     cur_vert, verts = 0, []
     faces = []
-    for t, x, y in next_tile(img, 16):
+    for t, x, y in next_tile(img, tile_size):
         if is_empty_tile(t):
             continue
 
-        bl = (-(x - (img.width / 2.0)), -(y + 16) + (img.height / 2.0), 0.0)
+        bl = (-(x - (img.width / 2.0)), -(y + tile_size) + (img.height / 2.0), 0.0)
         tl = (-(x - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
-        tr = (-((x + 16) - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
-        br = (-((x + 16) - (img.width / 2.0)), -(y + 16) + (img.height / 2.0), 0.0)
+        tr = (-((x + tile_size) - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
+        br = (-((x + tile_size) - (img.width / 2.0)), -(y + tile_size) + (img.height / 2.0), 0.0)
 
         cur_vert += 4
         verts.extend([bl, tl, tr, br])
@@ -92,10 +92,14 @@ def main():
     parser.add_argument('tile_map', help='The path of the tile map.')
     parser.add_argument('atlas', help='The path of the texture atlas.')
     parser.add_argument('out', help='The name of the output file.')
+    parser.add_argument('-s', type=int, default=16, help='The tile size in pixels.')
     args = parser.parse_args()
+
+    if args.s <= 0:
+        raise argparse.ArgumentTypeError('invalid tile size {}'.format(args.s))
     
-    tc = gen_tex_coords(args.atlas)
-    verts, faces = gen_mesh(args.tile_map, tc)
+    tc = gen_tex_coords(args.atlas, args.s)
+    verts, faces = gen_mesh(args.tile_map, tc, args.s)
 
     with open(args.out, 'w') as out:
         out.write('g {}\n'.format(os.path.splitext(os.path.basename(args.tile_map))[0]))
