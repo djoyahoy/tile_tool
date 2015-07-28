@@ -2,7 +2,6 @@ import argparse
 import hashlib
 import logging
 import os
-import struct
 from PIL import Image
 
 def next_tile(img, size):
