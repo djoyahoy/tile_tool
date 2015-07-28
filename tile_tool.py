@@ -1,10 +1,9 @@
 import argparse
 import hashlib
+import logging
 import os
 import struct
 from PIL import Image
-
-import sys
 
 def next_tile(img, size):
     """Return the texture image data and the x/y coordinates of the top left."""
@@ -71,7 +70,11 @@ def gen_mesh(img, tc, tile_size):
         verts.extend([bl, tl, tr, br])
         cur_vert += 4
 
-        coords = tc[tile_hash(t)]
+        try:
+            coords = tc[tile_hash(t)]
+        except KeyError as e:
+            logging.warning('Unable to find tile in atlas ({}, {})'.format(int(y / tile_size), int(x / tile_size)))
+            continue
 
         # generate faces using vertex and texture indicies
         tri_a = [(cur_vert - 3, coords[0]),
@@ -87,6 +90,12 @@ def gen_mesh(img, tc, tile_size):
     return verts, faces
 
 def break_tile_map(img, tile_size):
+    """Break a tile map into rectangular portions/images and return a list of each portion/image.
+
+    This function attempts to break a tile map into the fewest rectangular portions of contiguous tiles.
+    This is useful for creating the least amount of geometry for 2D physics calculations.
+    The function operates using a greedy method and is not intended to produce optimal geometry.
+    """
 
     # create a 2D array for each tile in the image
     w = int(img.width / tile_size)
@@ -115,10 +124,11 @@ def break_tile_map(img, tile_size):
                     for j in range(int(box[0] / tile_size), int(box[2] / tile_size)):
                         arr[i][j] = 0
 
-    print(len(broken))
     return broken
 
 def _find_max_rect(arr, r, c, tile_size):
+    """Return the box coordinates of the largest contiguous rectangle of tiles in the given array.
+    """
     max_so_far = (-1, None)
 
     for i in range(len(arr)):
@@ -143,6 +153,9 @@ def _find_max_rect(arr, r, c, tile_size):
     return max_so_far[1]
 
 def _is_rect_full(arr, a, b):
+    """Return true if the given rectangular portion is contiguous.
+    Contiguous in this instance means that there are no empty tiles in the portion.
+    """
     if a[0] == b[0] and a[1] == b[1]:
         return True
 
@@ -157,6 +170,8 @@ def _is_rect_full(arr, a, b):
     return True
 
 def write_obj_file(name, verts, tc, faces):
+    """Write an object file.
+    """
     with open(name + '.obj', 'w') as out:
         out.write('g {}\n'.format(name))
 
@@ -181,12 +196,16 @@ def main():
     parser.add_argument('-s', type=int, default=16, help='The tile size in pixels.')
     parser.add_argument('-b', action='store_true', default=False,
         help='Break the tile map into individual meshes and output a file for each.')
+    parser.add_argument('-o', type=str, help='Output directory.')
     args = parser.parse_args()
 
     if args.s <= 0:
         raise argparse.ArgumentTypeError('invalid tile size {}'.format(args.s))
 
     name = os.path.splitext(os.path.basename(args.tile_map))[0]
+    if args.o:
+        name = os.path.join(args.o, name)
+    
     map_img = Image.open(args.tile_map)
     atlas_img = Image.open(args.atlas)
 
