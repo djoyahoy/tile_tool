@@ -61,6 +61,12 @@ def gen_mesh(img, tc, tile_size):
         if is_empty_tile(t):
             continue
 
+        try:
+            coords = tc[tile_hash(t)]
+        except KeyError as e:
+            logging.warning('Unable to find tile in atlas ({}, {})'.format(int(y / tile_size), int(x / tile_size)))
+            continue
+
         # generate verticies
         bl = (-(x - (img.width / 2.0)), -(y + tile_size) + (img.height / 2.0), 0.0)
         tl = (-(x - (img.width / 2.0)), -y + (img.height / 2.0), 0.0)
@@ -68,12 +74,6 @@ def gen_mesh(img, tc, tile_size):
         br = (-((x + tile_size) - (img.width / 2.0)), -(y + tile_size) + (img.height / 2.0), 0.0)
         verts.extend([bl, tl, tr, br])
         cur_vert += 4
-
-        try:
-            coords = tc[tile_hash(t)]
-        except KeyError as e:
-            logging.warning('Unable to find tile in atlas ({}, {})'.format(int(y / tile_size), int(x / tile_size)))
-            continue
 
         # generate faces using vertex and texture indicies
         tri_a = [(cur_vert - 3, coords[0]),
